@@ -1,13 +1,16 @@
-import tinyoscquery, time
+import time
 
 from tinyoscquery.queryservice import OSCQueryService
 from tinyoscquery.shared.node import OSCQueryNode
+from tinyoscquery.shared.osc_access import OSCAccess
 
 if __name__ == "__main__":
     oscqs = OSCQueryService("Test-Service", 9020, 9020)
     print(oscqs.root_node)
 
-    oscqs.add_node(OSCQueryNode("/testing/is/cool"))
+    oscqs.add_node(
+        OSCQueryNode("/testing/is/cool", value=99, access=OSCAccess.READONLY_VALUE)
+    )
 
     print(oscqs.root_node)
 
