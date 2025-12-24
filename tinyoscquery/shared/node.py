@@ -83,10 +83,10 @@ class OSCQueryNode:
         try:
             iter(value)
         except TypeError:
-            value = [value] if value else []
+            value = [value] if value is not None else []
         self.value = value
 
-        if not value and access is not OSCAccess.NO_VALUE:
+        if value is None and access is not OSCAccess.NO_VALUE:
             raise Exception(
                 f"No value(s) given, access must be {OSCAccess.NO_VALUE.name} for container nodes."
             )
