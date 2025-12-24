@@ -1,3 +1,4 @@
+import ipaddress
 import threading
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from ipaddress import IPv4Address, IPv6Address
@@ -12,14 +13,11 @@ class OSCQueryService(object):
     """
     A class providing an OSCQuery service. Automatically sets up an oscjson http server and advertises the oscjson server and osc server on zeroconf.
 
-    Attributes
-    ----------
-    server_name : str
-        Name of your OSC Service
-    http_port : int
-        Desired TCP port number for the oscjson HTTP server
-    osc_port : int
-        Desired UDP port number for the osc server
+    Attributes:
+        server_name: Name of your OSC Service
+        http_port: Desired TCP port number for the oscjson HTTP server
+        osc_port: Desired UDP port number for the osc server
+        osc_ip: IP address of the oscjson server
     """
 
     def __init__(
@@ -27,12 +25,12 @@ class OSCQueryService(object):
         server_name: str,
         http_port: int,
         osc_port: int,
-        osc_ip: IPv4Address | IPv6Address = "127.0.0.1",
+        osc_ip: IPv4Address | IPv6Address | str = "127.0.0.1",
     ) -> None:
         self.server_name = server_name
         self.http_port = http_port
         self.osc_port = osc_port
-        self.osc_ip = osc_ip
+        self.osc_ip = ipaddress.ip_address(osc_ip)
 
         self.root_node = OSCQueryNode("/", description="root node")
         self.host_info = OSCHostInfo(
@@ -44,7 +42,7 @@ class OSCQueryService(object):
                 "TYPE": True,
                 "VALUE": True,
             },
-            self.osc_ip,
+            str(self.osc_ip),
             self.osc_port,
             "UDP",
         )
@@ -59,7 +57,8 @@ class OSCQueryService(object):
         self.http_thread.start()
 
     def __del__(self):
-        self._zeroconf.unregister_all_services()
+        if hasattr(self, "_zeroconf"):
+            self._zeroconf.unregister_all_services()
 
     def add_node(self, node: OSCQueryNode):
         self.root_node.add_child_node(node)
@@ -75,6 +74,7 @@ class OSCQueryService(object):
             oscqs_desc,
             "%s.oscjson.local." % self.server_name,
             addresses=["127.0.0.1"],
+            # addresses=[self.osc_ip], # TODO: Understand zeroconf and maybe fix this
         )
         self._zeroconf.register_service(oscqs_info)
 

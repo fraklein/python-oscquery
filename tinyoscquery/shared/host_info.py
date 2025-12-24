@@ -20,7 +20,7 @@ class OSCHostInfo:
         self,
         name: str,
         extensions,
-        osc_ip=None,
+        osc_ip: str | None = None,
         osc_port=None,
         osc_transport=None,
         ws_ip=None,

@@ -16,14 +16,14 @@ class OSCQueryClient(object):
         self.service_info = service_info
         self.last_json = None
 
-    def _get_query_root(self):
+    def _get_query_root(self) -> str:
         return f"http://{self._get_ip_str()}:{self.service_info.port}"
 
-    def _get_ip_str(self):
+    def _get_ip_str(self) -> str:
         ip_str = ".".join([str(int(num)) for num in self.service_info.addresses[0]])
         return ip_str
 
-    def query_node(self, node: str = "/"):
+    def query_node(self, node: str = "/") -> OSCQueryNode | None:
         url = self._get_query_root() + node
         r = None
         try:
