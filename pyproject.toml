@@ -1,8 +1,14 @@
 [project]
 name = "tinyoscquery"
 version = "0.1.0"
-description = "Add your description here"
+description = "OSCQuery library to advertise an Open Sound Control (OSC) service"
+authors = [
+    { name = "Cyberkitsune", email = "" },
+    { name = "Frank Klein", email = "" },
+]
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENCE"]
 requires-python = ">=3.12"
 dependencies = [
     "requests>=2.32.5",
