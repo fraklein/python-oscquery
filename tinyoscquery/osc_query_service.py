@@ -1,6 +1,7 @@
 import ipaddress
 import logging
 import threading
+import urllib
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from ipaddress import IPv4Address, IPv6Address
 
@@ -116,27 +117,47 @@ class OSCQueryHTTPServer(HTTPServer):
 
 
 class OSCQueryHTTPHandler(SimpleHTTPRequestHandler):
-    def do_GET(self) -> None:
-        logger.debug(f"GET {self.path}")
+    def _respond(self, code, data=None):
+        self.send_response(code)
+        self.send_header("Content-type", "text/json")
+        self.end_headers()
+        self.wfile.write(bytes(data, "utf-8"))
 
-        if "HOST_INFO" in self.path:
-            self.send_response(200)
-            self.send_header("Content-type", "text/json")
-            self.end_headers()
-            self.wfile.write(bytes(str(self.server.host_info.to_json()), "utf-8"))
+    def do_GET(self) -> None:
+        logger.debug(f"GET {self.path} ({self.client_address})")
+
+        parsed_url = urllib.parse.urlparse(self.path)
+        query_params = urllib.parse.parse_qs(parsed_url.query, keep_blank_values=True)
+        logger.debug(f"   {parsed_url.path}")
+        logger.debug(f"   {parsed_url.query}")
+        logger.debug(f"   {query_params}")
+
+        for query in query_params:
+            logger.debug(f"   {query}")
+            if query not in (
+                "HOST_INFO",
+                "FULL_PATH",
+                "CONTENTS",
+                "TYPE",
+                "VALUE",
+                "ACCESS",
+                "RANGE",
+                "DESCRIPTION",
+            ):
+                logger.error(f"Attribute {query} not understood by server")
+                self._respond(400, f"Attribute {query} not understood by server")
+                return
+
+        if "HOST_INFO" in query_params:
+            self._respond(200, str(self.server.host_info.to_json()))
             return
 
-        node = self.server.root_node.find_subnode(self.path)
+        node = self.server.root_node.find_subnode(parsed_url.path)
         if node is None:
-            self.send_response(404)
-            self.send_header("Content-type", "text/json")
-            self.end_headers()
-            self.wfile.write(bytes("OSC Path not found", "utf-8"))
-        else:
-            self.send_response(200)
-            self.send_header("Content-type", "text/json")
-            self.end_headers()
-            self.wfile.write(bytes(str(node.to_json()), "utf-8"))
+            self._respond(404, "OSC Path not found")
+            return
+
+        self._respond(200, str(node.to_json()))
 
     def log_message(self, format, *args):
         pass
