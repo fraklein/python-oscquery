@@ -1,45 +1,52 @@
 import builtins
 import json
 from json import JSONEncoder
-from typing import Any, List, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from tinyoscquery.shared.osc_access import OSCAccess
 from tinyoscquery.shared.osc_spec import disallowed_path_chars, is_valid_path
+from tinyoscquery.shared.oscquery_spec import OSCQueryAttribute
 
 
 class OSCNodeEncoder(JSONEncoder):
+    def __init__(self, attribute_filter: OSCQueryAttribute | None = None, **kwargs):
+        super(OSCNodeEncoder, self).__init__()
+        self.attribute_filter = attribute_filter
+
     def default(self, o):
         if isinstance(o, OSCPathNode):
             obj_dict = {}
-            for k, v in vars(o).items():
+            o: OSCPathNode
+            for k, v in o.attributes.items():
                 if v is None:
                     continue
 
-                k = k.lower()
+                if self.attribute_filter is not None and self.attribute_filter != k:
+                    continue
 
                 match k:
-                    case "contents":
+                    case OSCQueryAttribute.CONTENTS:
                         if len(v) < 1:
                             continue
                         obj_dict["CONTENTS"] = {}
+                        sub_node: OSCPathNode
                         for sub_node in v:
-                            if sub_node.full_path is not None:
+                            if (
+                                sub_node.attributes[OSCQueryAttribute.FULL_PATH]
+                                is not None
+                            ):
                                 obj_dict["CONTENTS"][
-                                    sub_node.full_path.split("/")[-1]
+                                    sub_node.attributes[
+                                        OSCQueryAttribute.FULL_PATH
+                                    ].split("/")[-1]
                                 ] = sub_node
                             else:
                                 continue
-                    case "value":
-                        if len(v) > 0:
-                            obj_dict["VALUE"] = v
-                            obj_dict["TYPE"] = python_type_list_to_osc_type(o.type_)
+                    case OSCQueryAttribute.TYPE:
+                        obj_dict["TYPE"] = python_type_list_to_osc_type(v)
                     case _:
-                        obj_dict[k.upper()] = v
+                        obj_dict[k.name.upper()] = v
 
-            # FIXME: I missed something, so here's a hack!
-
-            if "TYPE_" in obj_dict:
-                del obj_dict["TYPE_"]
             return obj_dict
 
         return json.JSONEncoder.default(self, o)
@@ -55,7 +62,7 @@ class OSCPathNode:
         contents: list["OSCPathNode"] = None,
         access: OSCAccess = OSCAccess.NO_VALUE,
         description: str = None,
-        value: Union[T, List[T]] = None,
+        value: Union[T, list[T]] = None,
     ):
         if not is_valid_path(full_path):
             raise ValueError(
@@ -64,25 +71,35 @@ class OSCPathNode:
                 )
             )
 
-        self.full_path = full_path
+        self._attributes: dict[OSCQueryAttribute, Any] = {}
 
-        self.contents: list["OSCPathNode"] = contents or []
+        self._attributes[OSCQueryAttribute.FULL_PATH] = full_path
+
+        self._attributes[OSCQueryAttribute.CONTENTS]: list["OSCPathNode"] = (
+            contents or []
+        )
 
         # Ensure that value is an iterable
         try:
             iter(value)
         except TypeError:
             value = [value] if value is not None else []
-        self.value = value
+        self._attributes[OSCQueryAttribute.VALUE] = value
 
         if value is None and access is not OSCAccess.NO_VALUE:
             raise Exception(
                 f"No value(s) given, access must be {OSCAccess.NO_VALUE.name} for container nodes."
             )
 
-        self.access = access
+        types = []
+        for v in self._attributes[OSCQueryAttribute.VALUE]:
+            types.append(type(v))
 
-        self.description = description
+        self._attributes[OSCQueryAttribute.TYPE] = types if value is not None else None
+
+        self._attributes[OSCQueryAttribute.ACCESS] = access
+
+        self._attributes[OSCQueryAttribute.DESCRIPTION] = description
 
     @classmethod
     def from_json(cls, json_data: dict[str, Any]) -> "OSCPathNode":
@@ -125,29 +142,26 @@ class OSCPathNode:
         return cls(full_path, contents, access, description, value)
 
     @property
-    def type_(self) -> list[T]:
-        types = []
-        for v in self.value:
-            types.append(type(v))
-        return types
+    def attributes(self) -> dict[OSCQueryAttribute, Any]:
+        return self._attributes
 
     @property
     def is_method(self) -> bool:
         """Returns True if this node is an OSC method, False otherwise.
         An OSC method"""
-        if self.contents:
+        if self._attributes[OSCQueryAttribute.CONTENTS]:
             return False
         return True
 
     def find_subnode(self, full_path: str) -> Union["OSCPathNode", None]:
         """Recursively find a node with the given full path"""
-        if self.full_path == full_path:
+        if self._attributes[OSCQueryAttribute.FULL_PATH] == full_path:
             return self
 
-        if not self.contents:
+        if not self._attributes[OSCQueryAttribute.CONTENTS]:
             return None
 
-        for sub_node in self.contents:
+        for sub_node in self._attributes[OSCQueryAttribute.CONTENTS]:
             found_node = sub_node.find_subnode(full_path)
             if found_node:
                 return found_node
@@ -158,7 +172,7 @@ class OSCPathNode:
         if child == self:
             return
 
-        path_split = child.full_path.rsplit("/", 1)
+        path_split = child._attributes[OSCQueryAttribute.FULL_PATH].rsplit("/", 1)
         if len(path_split) < 2:
             raise Exception("Tried to add child node with invalid full path!")
 
@@ -173,19 +187,19 @@ class OSCPathNode:
             parent = OSCPathNode(parent_path)
             self.add_child_node(parent)
 
-        parent.contents.append(child)
+        parent._attributes[OSCQueryAttribute.CONTENTS].append(child)
 
-    def to_json(self) -> str:
-        return json.dumps(self, cls=OSCNodeEncoder)
+    def to_json(self, attribute: OSCQueryAttribute | None = None) -> str:
+        return json.dumps(self, cls=OSCNodeEncoder, attribute_filter=attribute)
 
     def __iter__(self):
         yield self
-        if self.contents is not None:
-            for subNode in self.contents:
+        if self._attributes[OSCQueryAttribute.CONTENTS] is not None:
+            for subNode in self._attributes[OSCQueryAttribute.CONTENTS]:
                 yield from subNode
 
     def __str__(self) -> str:
-        return f'<OSCQueryNode @ {self.full_path} (D: "{self.description}" T:{self.type_} V:{self.value})>'
+        return f'<OSCQueryNode @ {self._attributes[OSCQueryAttribute.FULL_PATH]} (D: "{self._attributes[OSCQueryAttribute.DESCRIPTION]}" T:{self._attributes[OSCQueryAttribute.TYPE]} V:{self._attributes[OSCQueryAttribute.VALUE]})>'
 
 
 def osc_type_string_to_python_type(type_str: str) -> list[type]:
@@ -225,7 +239,7 @@ def python_type_list_to_osc_type(types_: list[type]) -> str:
             case _:
                 raise Exception(f"Cannot convert {type_} to OSC type!")
 
-    return " ".join(output)
+    return "".join(output)
 
 
 if __name__ == "__main__":

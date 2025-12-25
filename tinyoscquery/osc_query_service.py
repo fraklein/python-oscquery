@@ -9,6 +9,7 @@ from zeroconf import ServiceInfo, Zeroconf
 
 from .shared.host_info import OSCHostInfo
 from .shared.osc_namespace import OSCNamespace
+from .shared.oscquery_spec import OSCQueryAttribute
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +158,17 @@ class OSCQueryHTTPHandler(SimpleHTTPRequestHandler):
             self._respond(404, "OSC Path not found")
             return
 
-        self._respond(200, str(node.to_json()))
+        attribute = None
+        if query_params:
+            try:
+                attribute = OSCQueryAttribute(list(query_params)[0].upper())
+            except ValueError:
+                self._respond(
+                    500, "Internal server error - Query not mappable to OSC attribute"
+                )
+                return
+
+        self._respond(200, str(node.to_json(attribute)))
 
     def log_message(self, format, *args):
         pass
