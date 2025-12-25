@@ -44,7 +44,7 @@ class OSCQueryClient(object):
         return OSCPathNode.from_json(self.last_json)
 
     def get_host_info(self) -> OSCHostInfo | None:
-        url = self._get_query_root() + "/HOST_INFO"
+        url = self._get_query_root() + "/?HOST_INFO"
         r = None
         try:
             r = requests.get(url)
