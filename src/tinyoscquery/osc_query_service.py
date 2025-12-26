@@ -7,7 +7,7 @@ from ipaddress import IPv4Address, IPv6Address
 
 from zeroconf import ServiceInfo, Zeroconf
 
-from .shared.host_info import OSCHostInfo
+from .shared.osc_host_info import OSCHostInfo
 from .shared.osc_namespace import OSCNamespace
 from .shared.oscquery_spec import OSCQueryAttribute
 

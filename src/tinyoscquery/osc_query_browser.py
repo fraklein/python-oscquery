@@ -1,8 +1,8 @@
 from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
 
-from tinyoscquery.osc_query_client import OSCQueryClient
-from tinyoscquery.shared.host_info import OSCHostInfo
-from tinyoscquery.shared.osc_path_node import OSCPathNode
+from .osc_query_client import OSCQueryClient
+from .shared.osc_host_info import OSCHostInfo
+from .shared.osc_path_node import OSCPathNode
 
 
 class OSCQueryBrowser(object):

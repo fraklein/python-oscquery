@@ -1,8 +1,8 @@
 import requests
 from zeroconf import ServiceInfo
 
-from tinyoscquery.shared.host_info import OSCHostInfo
-from tinyoscquery.shared.osc_path_node import OSCPathNode
+from .shared.osc_host_info import OSCHostInfo
+from .shared.osc_path_node import OSCPathNode
 
 
 class OSCQueryClient(object):

@@ -3,9 +3,9 @@ import json
 from json import JSONEncoder
 from typing import Any, TypeVar, Union
 
-from tinyoscquery.shared.osc_access import OSCAccess
-from tinyoscquery.shared.osc_spec import disallowed_path_chars, is_valid_path
-from tinyoscquery.shared.oscquery_spec import OSCQueryAttribute
+from .osc_access import OSCAccess
+from .osc_spec import disallowed_path_chars, is_valid_path
+from .oscquery_spec import OSCQueryAttribute
 
 
 class OSCNodeEncoder(JSONEncoder):

@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from tinyoscquery.shared.osc_path_node import OSCPathNode
+from .osc_path_node import OSCPathNode
 
 
 class OSCNamespace:

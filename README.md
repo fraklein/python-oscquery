@@ -27,7 +27,7 @@ To register a OSCQuery Service, simply construct a `OSCQueryService` (in `tinyos
 name, and desired port numbers. The HTTP oscjson server and zeroconf advertisements will automataically start.
 
 ```Python
-from tinyoscquery.osc_query_service import OSCQueryService
+from tinyoscquery import OSCQueryService
 import time
 
 osc_port = 9020  # Find a predefined open port for OSC
@@ -47,8 +47,8 @@ If you want to select any open ports on the system to use, a port finder is prov
 package.
 
 ```Python
-from tinyoscquery.osc_query_service import OSCQueryService
-from tinyoscquery.utility import get_open_tcp_port, get_open_udp_port
+from tinyoscquery import OSCQueryService
+from tinyoscquery import get_open_tcp_port, get_open_udp_port
 import time
 
 osc_port = get_open_udp_port()  # Find a random open port for OSC
@@ -72,8 +72,8 @@ instance, wait for discovery, and then use `OSCQueryClient` to evaluate the HOST
 ```python
 import time
 
-from tinyoscquery.osc_query_client import OSCQueryClient
-from tinyoscquery.osc_query_browser import OSCQueryBrowser
+from tinyoscquery import OSCQueryClient
+from tinyoscquery import OSCQueryBrowser
 
 browser = OSCQueryBrowser()
 time.sleep(2)  # Wait for discovery
