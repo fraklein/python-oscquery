@@ -12,7 +12,7 @@ class OSCHostInfoEncoder(JSONEncoder):
                 obj_dict[k.upper()] = v
             return obj_dict
 
-        return json.JSONEncoder.default(self, o)
+        return json.JSONEncoder.default(self, o)  # pragma: no cover
 
 
 class OSCHostInfo:
@@ -37,5 +37,5 @@ class OSCHostInfo:
     def to_json(self) -> str:
         return json.dumps(self, cls=OSCHostInfoEncoder)
 
-    def __str__(self) -> str:
-        return json.dumps(self, cls=OSCHostInfoEncoder)
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.name}, {self.osc_ip}, {self.osc_port}, {self.osc_transport}, {self.ws_ip}, {self.ws_port}, {self.extensions})"
