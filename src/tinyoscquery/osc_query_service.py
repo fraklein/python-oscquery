@@ -8,8 +8,8 @@ from ipaddress import IPv4Address, IPv6Address
 from zeroconf import ServiceInfo, Zeroconf
 
 from tinyoscquery.shared.osc_access import OSCAccess
+from tinyoscquery.shared.osc_addressspace import OSCAddressSpace
 from tinyoscquery.shared.osc_host_info import OSCHostInfo
-from tinyoscquery.shared.osc_namespace import OSCNamespace
 from tinyoscquery.shared.osc_path_node import OSCPathNode
 from tinyoscquery.shared.oscquery_spec import OSCQueryAttribute
 
@@ -29,13 +29,13 @@ class OSCQueryService:
 
     def __init__(
         self,
-        namespace: OSCNamespace,
+        address_space: OSCAddressSpace,
         server_name: str,
         http_port: int,
         osc_port: int,
         osc_ip: IPv4Address | IPv6Address | str = "127.0.0.1",
     ) -> None:
-        self._namespace = namespace
+        self._address_space = address_space
         self.server_name = server_name
         self.http_port = http_port
         self.osc_port = osc_port
@@ -59,7 +59,7 @@ class OSCQueryService:
         self._start_osc_query_service()
         self._advertise_osc_service()
         self.http_server = OSCQueryHTTPServer(
-            self._namespace.root_node,
+            self._address_space.root_node,
             self.host_info,
             ("", self.http_port),
             OSCQueryHTTPHandler,

@@ -6,7 +6,7 @@ from .osc_path_node import OSCPathNode
 logger = logging.getLogger(__name__)
 
 
-class OSCNamespace:
+class OSCAddressSpace:
     def __init__(self):
         self._root = OSCPathNode("/", description="root node")
 
@@ -25,7 +25,8 @@ class OSCNamespace:
     def add_node(self, node: OSCPathNode):
         if self.find_node(node.full_path) is not None:
             logger.warning(
-                "Node (%s) already exists, not added again to namespace", node.full_path
+                "Node (%s) already exists, not added again to address space",
+                node.full_path,
             )
             return
 

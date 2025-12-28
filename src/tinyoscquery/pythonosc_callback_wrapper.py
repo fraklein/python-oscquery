@@ -4,7 +4,7 @@ from typing import Any
 import pythonosc
 from pythonosc.dispatcher import Dispatcher, Handler
 
-from tinyoscquery.shared.osc_namespace import OSCNamespace
+from tinyoscquery.shared.osc_addressspace import OSCAddressSpace
 from tinyoscquery.shared.osc_path_node import OSCPathNode
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ def map_node(
     node: OSCPathNode,
     dispatcher: Dispatcher,
     callback: callable,
-    namespace: OSCNamespace | None = None,
+    address_space: OSCAddressSpace | None = None,
     *args: Any | list[Any],
     needs_reply_address: bool = False,
 ) -> Handler:
@@ -65,7 +65,7 @@ def map_node(
         node: OSCPathNode to use for type checking
         dispatcher: python-osc dispatcher
         callback: the callback function that is called when the python-osc server receives a matching message
-        namespace: When given, adds the node to this namespace for us in the OSCQuery server
+        address_space: When given, adds the node to this address space for us in the OSCQuery server
         *args: Fixed arguments that will be passed to the callback function
         needs_reply_address: Whether the IP address from which the message originated from shall be passed as
             an argument to the handler callback
@@ -79,7 +79,7 @@ def map_node(
     )
     wrapper.register_handler(handler)
 
-    if namespace:
-        namespace.add_node(node)
+    if address_space:
+        address_space.add_node(node)
 
     return handler

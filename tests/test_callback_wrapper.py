@@ -7,7 +7,7 @@ from pythonosc.dispatcher import Dispatcher
 
 from tinyoscquery.pythonosc_callback_wrapper import OSCCallbackWrapper, map_node
 from tinyoscquery.shared.osc_access import OSCAccess
-from tinyoscquery.shared.osc_namespace import OSCNamespace
+from tinyoscquery.shared.osc_addressspace import OSCAddressSpace
 from tinyoscquery.shared.osc_path_node import OSCPathNode
 
 logging.basicConfig(level=logging.DEBUG)
@@ -51,8 +51,8 @@ def fixed_args():
 
 
 @pytest.fixture
-def namespace():
-    return OSCNamespace()
+def address_space():
+    return OSCAddressSpace()
 
 
 def get_message_value(osc_path_node):
@@ -272,10 +272,10 @@ class TestCallbackWrapper:
             with pytest.raises(TypeError):
                 h.invoke(("dummy", 99), message)
 
-    def test_node_mapping_adds_to_namespace(
-        self, osc_path_node, dispatcher, callback, namespace
+    def test_node_mapping_adds_to_address_space(
+        self, osc_path_node, dispatcher, callback, address_space
     ):
-        assert namespace.number_of_nodes == 1
-        map_node(osc_path_node, dispatcher, callback, namespace)
-        assert namespace.number_of_nodes == 2
-        assert namespace.find_node(osc_path_node.full_path) == osc_path_node
+        assert address_space.number_of_nodes == 1
+        map_node(osc_path_node, dispatcher, callback, address_space)
+        assert address_space.number_of_nodes == 2
+        assert address_space.find_node(osc_path_node.full_path) == osc_path_node

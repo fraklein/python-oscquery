@@ -3,7 +3,7 @@ import builtins
 import pytest
 
 from tinyoscquery.shared.osc_access import OSCAccess
-from tinyoscquery.shared.osc_namespace import OSCNamespace
+from tinyoscquery.shared.osc_addressspace import OSCAddressSpace
 from tinyoscquery.shared.osc_path_node import OSCPathNode
 from tinyoscquery.shared.oscquery_spec import OSCQueryAttribute
 
@@ -29,8 +29,8 @@ def attribute():
 
 
 @pytest.fixture
-def namespace():
-    return OSCNamespace()
+def address_space():
+    return OSCAddressSpace()
 
 
 class TestOSCPathNode:
@@ -237,15 +237,15 @@ class TestOSCPathNode:
         # Assert
         assert node.is_method is True
 
-    def test_node_is_not_method(self, namespace):
+    def test_node_is_not_method(self, address_space):
         # Arrange
         node = OSCPathNode(
             "/test/bar",
             access=OSCAccess.READONLY_VALUE,
             value=[99, "hello", True, False, 123.5],
         )
-        namespace.add_node(node)
-        sut = namespace.find_node("/test")
+        address_space.add_node(node)
+        sut = address_space.find_node("/test")
         # Act
         # Assert
         assert sut.is_method is False

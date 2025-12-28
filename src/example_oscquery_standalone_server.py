@@ -2,12 +2,12 @@ import logging
 
 from tinyoscquery.osc_query_service import OSCQueryService
 from tinyoscquery.shared.osc_access import OSCAccess
-from tinyoscquery.shared.osc_namespace import OSCNamespace
+from tinyoscquery.shared.osc_addressspace import OSCAddressSpace
 from tinyoscquery.shared.osc_path_node import OSCPathNode
 
 if __name__ == "__main__":
-    osc_namespace = OSCNamespace()
-    osc_namespace.add_node(
+    osc_address_space = OSCAddressSpace()
+    osc_address_space.add_node(
         OSCPathNode(
             "/testing/is/cool",
             value=99,
@@ -15,31 +15,31 @@ if __name__ == "__main__":
             description="Read only int value",
         )
     )
-    osc_namespace.add_node(
+    osc_address_space.add_node(
         OSCPathNode("/testing/is/good", value=False, access=OSCAccess.READWRITE_VALUE)
     )
-    osc_namespace.add_node(
+    osc_address_space.add_node(
         OSCPathNode(
             "/testing/is/marvelous",
             value=[False, 123, 567.8, "bar"],
             access=OSCAccess.READWRITE_VALUE,
         )
     )
-    osc_namespace.add_node(
+    osc_address_space.add_node(
         OSCPathNode(
             "/testing/is/required",
             value=[False, True],
             access=OSCAccess.READWRITE_VALUE,
         )
     )
-    osc_namespace.add_node(
+    osc_address_space.add_node(
         OSCPathNode(
             "/testing/is/ok",
             value=[1, 5],
             access=OSCAccess.READWRITE_VALUE,
         )
     )
-    osc_namespace.add_node(
+    osc_address_space.add_node(
         OSCPathNode(
             "/write_only",
             value=1,
@@ -47,9 +47,9 @@ if __name__ == "__main__":
         )
     )
 
-    oscqs = OSCQueryService(osc_namespace, "Test-Service", 9020, 9020)
+    oscqs = OSCQueryService(osc_address_space, "Test-Service", 9020, 9020)
 
     logging.getLogger().setLevel(logging.DEBUG)
-    logging.debug("Server is up and serving namespace %s", osc_namespace)
+    logging.debug("Server is up and serving address space %s", osc_address_space)
 
     input("Press Enter to terminate server...")

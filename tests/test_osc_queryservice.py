@@ -5,19 +5,19 @@ import urllib3
 
 from tinyoscquery.osc_query_service import OSCQueryService
 from tinyoscquery.shared.osc_access import OSCAccess
-from tinyoscquery.shared.osc_namespace import OSCNamespace
+from tinyoscquery.shared.osc_addressspace import OSCAddressSpace
 from tinyoscquery.shared.osc_path_node import OSCPathNode
 
 
 @pytest.fixture
-def namespace():
-    return OSCNamespace()
+def address_space():
+    return OSCAddressSpace()
 
 
 @pytest.fixture
-def server(namespace):
+def server(address_space):
     return OSCQueryService(
-        namespace, "Unit test server", 8080, 8080, IPv4Address("127.0.0.1")
+        address_space, "Unit test server", 8080, 8080, IPv4Address("127.0.0.1")
     )
 
 
@@ -39,11 +39,11 @@ def write_only_node():
 
 
 class TestOSCQueryService:
-    def test_query(self, server, namespace, simple_node, write_only_node):
+    def test_query(self, server, address_space, simple_node, write_only_node):
         """I'm quite sure that this is not a good way to test the server, since it starts the actual server.
         I don't have the time at thew moment to read up / think about a better way."""
         # Arrange
-        namespace.add_node(simple_node)
+        address_space.add_node(simple_node)
         # Act 1
         response = urllib3.request("GET", "http://127.0.0.1:8080/?HOST_INFO")
         json = response.json()
@@ -108,8 +108,8 @@ class TestOSCQueryService:
         # Assert 5
         assert status == 400
 
-        # Arrange 6 - Adding a node to  the namespace is instantly reflected
-        namespace.add_node(write_only_node)
+        # Arrange 6 - Adding a node to  the address space is instantly reflected
+        address_space.add_node(write_only_node)
         # Act 6
         response = urllib3.request("GET", "http://127.0.0.1:8080/")
         status = response.status
