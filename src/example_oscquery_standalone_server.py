@@ -39,6 +39,13 @@ if __name__ == "__main__":
             access=OSCAccess.READWRITE_VALUE,
         )
     )
+    osc_namespace.add_node(
+        OSCPathNode(
+            "/write_only",
+            value=1,
+            access=OSCAccess.WRITEONLY_VALUE,
+        )
+    )
 
     oscqs = OSCQueryService(osc_namespace, "Test-Service", 9020, 9020)
 

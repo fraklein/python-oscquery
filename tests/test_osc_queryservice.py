@@ -1,0 +1,148 @@
+from ipaddress import IPv4Address
+
+import pytest
+import urllib3
+
+from tinyoscquery.osc_query_service import OSCQueryService
+from tinyoscquery.shared.osc_access import OSCAccess
+from tinyoscquery.shared.osc_namespace import OSCNamespace
+from tinyoscquery.shared.osc_path_node import OSCPathNode
+
+
+@pytest.fixture
+def namespace():
+    return OSCNamespace()
+
+
+@pytest.fixture
+def server(namespace):
+    return OSCQueryService(
+        namespace, "Unit test server", 8080, 8080, IPv4Address("127.0.0.1")
+    )
+
+
+@pytest.fixture
+def simple_node():
+    return OSCPathNode(
+        "/test", value=99, access=OSCAccess.READONLY_VALUE, description="Test node"
+    )
+
+
+@pytest.fixture
+def write_only_node():
+    return OSCPathNode(
+        "/write_only",
+        value=123,
+        access=OSCAccess.WRITEONLY_VALUE,
+        description="Write only node",
+    )
+
+
+class TestOSCQueryService:
+    def test_query(self, server, namespace, simple_node, write_only_node):
+        """I'm quite sure that this is not a good way to test the server, since it starts the actual server.
+        I don't have the time at thew moment to read up / think about a better way."""
+        # Arrange
+        namespace.add_node(simple_node)
+        # Act 1
+        response = urllib3.request("GET", "http://127.0.0.1:8080/?HOST_INFO")
+        json = response.json()
+        status = response.status
+        # Assert 1
+        assert status == 200
+        assert json["OSC_IP"] == "127.0.0.1"
+
+        # Act 2
+        response = urllib3.request("GET", "http://127.0.0.1:8080/")
+        json = response.json()
+        status = response.status
+        # Assert 2
+        assert status == 200
+        assert json == {
+            "ACCESS": 0,
+            "CONTENTS": {
+                "test": {
+                    "ACCESS": 1,
+                    "DESCRIPTION": "Test node",
+                    "FULL_PATH": "/test",
+                    "TYPE": "i",
+                    "VALUE": [99],
+                }
+            },
+            "DESCRIPTION": "root node",
+            "FULL_PATH": "/",
+            "TYPE": "",
+        }
+
+        # Act 3
+        response = urllib3.request("GET", "http://127.0.0.1:8080/some_bogus_adress")
+        status = response.status
+        # Assert 3
+        assert status == 404
+
+        # Act 4
+        response = urllib3.request("GET", "http://127.0.0.1:8080/test")
+        json = response.json()
+        status = response.status
+        # Assert 4
+        assert status == 200
+        assert json == {
+            "ACCESS": 1,
+            "DESCRIPTION": "Test node",
+            "FULL_PATH": "/test",
+            "TYPE": "i",
+            "VALUE": [99],
+        }
+
+        # Act 4
+        response = urllib3.request("GET", "http://127.0.0.1:8080/test?VALUE")
+        json = response.json()
+        status = response.status
+        # Assert 4
+        assert status == 200
+        assert json == {"VALUE": [99]}
+
+        # Act 5
+        response = urllib3.request("GET", "http://127.0.0.1:8080/test?BOGUSATTRIBUTE")
+        status = response.status
+        # Assert 5
+        assert status == 400
+
+        # Arrange 6 - Adding a node to  the namespace is instantly reflected
+        namespace.add_node(write_only_node)
+        # Act 6
+        response = urllib3.request("GET", "http://127.0.0.1:8080/")
+        status = response.status
+        json = response.json()
+        # Assert 6
+        assert status == 200
+        assert json == {
+            "ACCESS": 0,
+            "CONTENTS": {
+                "test": {
+                    "ACCESS": 1,
+                    "DESCRIPTION": "Test node",
+                    "FULL_PATH": "/test",
+                    "TYPE": "i",
+                    "VALUE": [99],
+                },
+                "write_only": {
+                    "ACCESS": 2,
+                    "DESCRIPTION": "Write only node",
+                    "FULL_PATH": "/write_only",
+                    "TYPE": "i",
+                    "VALUE": [123],
+                },
+            },
+            "DESCRIPTION": "root node",
+            "FULL_PATH": "/",
+            "TYPE": "",
+        }
+
+        # Act 7
+        response = urllib3.request(
+            "GET", "http://127.0.0.1:8080/write_only?VALUE", timeout=30.0
+        )
+        status = response.status
+        # Assert 7
+        assert status == 204

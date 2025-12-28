@@ -7,9 +7,11 @@ from ipaddress import IPv4Address, IPv6Address
 
 from zeroconf import ServiceInfo, Zeroconf
 
-from .shared.osc_host_info import OSCHostInfo
-from .shared.osc_namespace import OSCNamespace
-from .shared.oscquery_spec import OSCQueryAttribute
+from tinyoscquery.shared.osc_access import OSCAccess
+from tinyoscquery.shared.osc_host_info import OSCHostInfo
+from tinyoscquery.shared.osc_namespace import OSCNamespace
+from tinyoscquery.shared.osc_path_node import OSCPathNode
+from tinyoscquery.shared.oscquery_spec import OSCQueryAttribute
 
 logger = logging.getLogger(__name__)
 
@@ -149,18 +151,29 @@ class OSCQueryHTTPHandler(SimpleHTTPRequestHandler):
             self._respond(200, str(self.server.host_info.to_json()))
             return
 
-        node = self.server.root_node.find_subnode(parsed_url.path)
+        node: OSCPathNode = self.server.root_node.find_subnode(parsed_url.path)
         if node is None:
             self._respond(404, "OSC Path not found")
             return
 
         attribute = None
         if query_params:
+            query = list(query_params)[0]
             try:
-                attribute = OSCQueryAttribute(list(query_params)[0].upper())
+                attribute = OSCQueryAttribute(query.upper())
             except ValueError:
                 self._respond(
-                    500, "Internal server error - Query not mappable to OSC attribute"
+                    500,
+                    f"Internal server error - Query {query} not mappable to OSC attribute",
+                )
+                return
+
+            if attribute is OSCQueryAttribute.VALUE and node.access in (
+                OSCAccess.NO_VALUE,
+                OSCAccess.WRITEONLY_VALUE,
+            ):
+                self._respond(
+                    204, f"Attribute {query} not valid - node is not accessible."
                 )
                 return
 
