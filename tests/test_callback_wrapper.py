@@ -1,3 +1,4 @@
+import builtins
 import logging
 
 import pytest
@@ -5,6 +6,8 @@ from pythonosc import osc_message_builder
 from pythonosc.dispatcher import Dispatcher
 
 from tinyoscquery.pythonosc_callback_wrapper import OSCCallbackWrapper, map_node
+from tinyoscquery.shared.osc_access import OSCAccess
+from tinyoscquery.shared.osc_namespace import OSCNamespace
 from tinyoscquery.shared.osc_path_node import OSCPathNode
 
 logging.basicConfig(level=logging.DEBUG)
@@ -45,6 +48,30 @@ def needs_reply_address():
 @pytest.fixture
 def fixed_args():
     return ["first fixed", 123]
+
+
+@pytest.fixture
+def namespace():
+    return OSCNamespace()
+
+
+def get_message_value(osc_path_node):
+    """Build message value with the correct type.
+    Don't use the same value as in the node spec, but create new one with the same type
+    """
+    node_value = osc_path_node.value[0]
+    match type(node_value):
+        case builtins.bool if node_value is True:
+            value_1 = True
+        case builtins.bool if node_value is False:
+            value_1 = False
+        case builtins.int:
+            value_1 = 99541
+        case builtins.float:
+            value_1 = 874.15314
+        case builtins.str:
+            value_1 = "foobar"
+    return value_1
 
 
 class TestCallbackWrapper:
@@ -126,7 +153,9 @@ class TestCallbackWrapper:
 
     @pytest.mark.parametrize("address", ["/test"], indirect=False)
     @pytest.mark.parametrize(
-        "osc_path_node", [OSCPathNode("/test", value=67)], indirect=False
+        "osc_path_node",
+        [OSCPathNode("/test", value=67, access=OSCAccess.READWRITE_VALUE)],
+        indirect=False,
     )
     def test_raises_when_value_in_message_missing(
         self, dispatcher, callback, callback_wrapper, address, osc_path_node
@@ -142,7 +171,9 @@ class TestCallbackWrapper:
 
     @pytest.mark.parametrize("address", ["/test"], indirect=False)
     @pytest.mark.parametrize(
-        "osc_path_node", [OSCPathNode("/test", value=67)], indirect=False
+        "osc_path_node",
+        [OSCPathNode("/test", value=67, access=OSCAccess.READWRITE_VALUE)],
+        indirect=False,
     )
     def test_raises_when_too_many_value_in_message(
         self, dispatcher, callback, callback_wrapper, address, osc_path_node
@@ -163,26 +194,42 @@ class TestCallbackWrapper:
 
     @pytest.mark.parametrize("address", ["/test"], indirect=False)
     @pytest.mark.parametrize(
-        "osc_path_node", [OSCPathNode("/test", value=67)], indirect=False
+        "osc_path_node",
+        [
+            OSCPathNode("/test", value=67, access=OSCAccess.READWRITE_VALUE),
+            OSCPathNode("/test", value=123.456, access=OSCAccess.READWRITE_VALUE),
+            OSCPathNode("/test", value="hello", access=OSCAccess.READWRITE_VALUE),
+            OSCPathNode("/test", value=True, access=OSCAccess.READWRITE_VALUE),
+            OSCPathNode("/test", value=False, access=OSCAccess.READWRITE_VALUE),
+        ],
+        indirect=False,
     )
-    def test_callback_called_with_one_value(
+    def test_callback_called_with_one_correct_value(
         self, dispatcher, callback, callback_wrapper, address, osc_path_node
     ):
         map_node(osc_path_node, dispatcher, callback)
 
         message_builder = osc_message_builder.OscMessageBuilder(address)
-        value_1 = 1
+        value_1 = get_message_value(osc_path_node)
+
         message_builder.add_arg(value_1)
         message = message_builder.build()
 
         for h in dispatcher.handlers_for_address(address):
             h.invoke(("dummy", 99), message)
 
-        callback.assert_called_once_with(address, value_1)
+        # Check arguments, take floating point errors into account
+        args = callback.call_args.args
+        for called, expected in zip(args, [address, value_1]):
+            assert called == pytest.approx(expected)
+
+        callback.assert_called_once()
 
     @pytest.mark.parametrize("address", ["/test"], indirect=False)
     @pytest.mark.parametrize(
-        "osc_path_node", [OSCPathNode("/test", value=node_values)], indirect=False
+        "osc_path_node",
+        [OSCPathNode("/test", value=node_values, access=OSCAccess.READWRITE_VALUE)],
+        indirect=False,
     )
     def test_callback_called_with_many_values(
         self, dispatcher, callback, callback_wrapper, address, osc_path_node
@@ -198,10 +245,37 @@ class TestCallbackWrapper:
         for h in dispatcher.handlers_for_address(address):
             h.invoke(("dummy", 99), message)
 
-        args = callback.call_args.args
-
         # Check arguments, take floating point errors into account
+        args = callback.call_args.args
         for called, expected in zip(args, [address, *node_values]):
             assert called == pytest.approx(expected)
 
         callback.assert_called_once()
+
+    @pytest.mark.parametrize("address", ["/test"], indirect=False)
+    @pytest.mark.parametrize(
+        "osc_path_node",
+        [OSCPathNode("/test", value=67, access=OSCAccess.READWRITE_VALUE)],
+        indirect=False,
+    )
+    def test_callback_with_wrong_value_type_raises(
+        self, dispatcher, callback, callback_wrapper, address, osc_path_node
+    ):
+        map_node(osc_path_node, dispatcher, callback)
+
+        message_builder = osc_message_builder.OscMessageBuilder(address)
+        value_1 = "baz"
+        message_builder.add_arg(value_1)
+        message = message_builder.build()
+
+        for h in dispatcher.handlers_for_address(address):
+            with pytest.raises(TypeError):
+                h.invoke(("dummy", 99), message)
+
+    def test_node_mapping_adds_to_namespace(
+        self, osc_path_node, dispatcher, callback, namespace
+    ):
+        assert namespace.number_of_nodes == 1
+        map_node(osc_path_node, dispatcher, callback, namespace)
+        assert namespace.number_of_nodes == 2
+        assert namespace.find_node(osc_path_node.full_path) == osc_path_node

@@ -22,9 +22,7 @@ class OSCCallbackWrapper:
         self.handler = handler
 
     def __call__(self, *args, **kwargs):
-        logger.debug(
-            f"{self.__class__.__name__} {self.node.full_path} called with args={args} kwargs={kwargs}"
-        )
+        logger.debug(f"{self} called with args={args} kwargs={kwargs}")
 
         if not self.handler:
             raise TypeError(
@@ -44,14 +42,7 @@ class OSCCallbackWrapper:
             # fixed parameters, when required by the callback, are always the next argument. We don't need to check them.
             values = values[1:]
 
-        if len(values) != len(self.node.type):
-            raise TypeError(
-                f"Expected {len(self.node.type)} value(s), got {len(values)} when calling callback {repr(self.callback)} for {self.node.full_path}"
-            )
-
-        for i, type_ in enumerate(self.node.type):
-            if type(values[i]) is not type_:
-                raise TypeError(f"Expected {type_} for value {i}, got {values[i]}")
+        self.node.validate_values(values)
 
         return self.callback(*args, **kwargs)
 

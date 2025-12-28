@@ -1,11 +1,15 @@
 import builtins
 import json
+import logging
+from collections.abc import Iterable
 from json import JSONEncoder
 from typing import Any, TypeVar, Union
 
 from .osc_access import OSCAccess
 from .osc_spec import disallowed_path_chars, is_valid_path
 from .oscquery_spec import OSCQueryAttribute
+
+logger = logging.getLogger(__name__)
 
 
 class OSCNodeEncoder(JSONEncoder):
@@ -31,17 +35,11 @@ class OSCNodeEncoder(JSONEncoder):
                         obj_dict["CONTENTS"] = {}
                         sub_node: OSCPathNode
                         for sub_node in v:
-                            if (
-                                sub_node.attributes[OSCQueryAttribute.FULL_PATH]
-                                is not None
-                            ):
-                                obj_dict["CONTENTS"][
-                                    sub_node.attributes[
-                                        OSCQueryAttribute.FULL_PATH
-                                    ].split("/")[-1]
-                                ] = sub_node
-                            else:
-                                continue
+                            obj_dict["CONTENTS"][
+                                sub_node.attributes[OSCQueryAttribute.FULL_PATH].split(
+                                    "/"
+                                )[-1]
+                            ] = sub_node
                     case OSCQueryAttribute.TYPE:
                         obj_dict["TYPE"] = python_type_list_to_osc_type(v)
                     case _:
@@ -49,7 +47,7 @@ class OSCNodeEncoder(JSONEncoder):
 
             return obj_dict
 
-        return json.JSONEncoder.default(self, o)
+        return json.JSONEncoder.default(self, o)  # pragma: no cover
 
 
 T = TypeVar("T", bound=int | float | bool | str)
@@ -66,7 +64,9 @@ class OSCPathNode:
     ):
         if not is_valid_path(full_path):
             raise ValueError(
-                "Invalid path: Path must not contain any of the following characters: {} ".format(
+                "Invalid path: Path must start with a single trailing forward slash (/)."
+                "Path must not contain any of the following characters: {}."
+                "Path must not have empty nodes (like /test//path). Path must not have trailing forward slashes. ".format(
                     disallowed_path_chars
                 )
             )
@@ -80,20 +80,25 @@ class OSCPathNode:
         )
 
         # Ensure that value is an iterable
-        try:
-            iter(value)
-        except TypeError:
+        if not isinstance(value, Iterable) or isinstance(value, str):
             value = [value] if value is not None else []
-        self._attributes[OSCQueryAttribute.VALUE] = value
 
-        if value is None and access is not OSCAccess.NO_VALUE:
-            raise Exception(
+        if not value and access is not OSCAccess.NO_VALUE:
+            raise ValueError(
                 f"No value(s) given, access must be {OSCAccess.NO_VALUE.name} for container nodes."
             )
 
+        if value and access is OSCAccess.NO_VALUE:
+            raise ValueError(
+                f"Value(s) given, access must not be {OSCAccess.NO_VALUE.name} for method nodes."
+            )
+
+        self._attributes[OSCQueryAttribute.VALUE] = value if value else None
+
         types = []
-        for v in self._attributes[OSCQueryAttribute.VALUE]:
-            types.append(type(v))
+        if value:
+            for v in self._attributes[OSCQueryAttribute.VALUE]:
+                types.append(type(v))
 
         self._attributes[OSCQueryAttribute.TYPE] = types if value is not None else None
 
@@ -128,16 +133,10 @@ class OSCPathNode:
         if "VALUE" in json_data:
             value = []
             if not isinstance(json_data["VALUE"], list):
-                raise Exception("OSCQuery JSON Value is not List / Array? Out-of-spec?")
+                raise TypeError("OSCQuery JSON Value is not List / Array? Out-of-spec?")
 
-            for idx, v in enumerate(json_data["VALUE"]):
-                # According to the spec, if there is not yet a value, the return will be an empty JSON object
-                if isinstance(v, dict) and not v:
-                    # FIXME does this apply to all values in the value array always...? I assume it does here
-                    value = []
-                    break
-                else:
-                    value.append(v)
+            for v in json_data["VALUE"]:
+                value.append(v)
 
         return cls(full_path, contents, access, description, value)
 
@@ -177,7 +176,7 @@ class OSCPathNode:
             return False
         return True
 
-    def find_subnode(self, full_path: str) -> Union["OSCPathNode", None]:
+    def find_subnode(self, full_path: str) -> "OSCPathNode | None":
         """Recursively find a node with the given full path"""
         if self.full_path == full_path:
             return self
@@ -192,29 +191,30 @@ class OSCPathNode:
 
         return None
 
-    def add_child_node(self, child: "OSCPathNode"):
-        if child == self:
-            return
-
-        path_split = child.full_path.rsplit("/", 1)
-        if len(path_split) < 2:
-            raise Exception("Tried to add child node with invalid full path!")
-
-        parent_path = path_split[0]
-
-        if parent_path == "":
-            parent_path = "/"
-
-        parent = self.find_subnode(parent_path)
-
-        if parent is None:
-            parent = OSCPathNode(parent_path)
-            self.add_child_node(parent)
-
-        parent.contents.append(child)
-
     def to_json(self, attribute: OSCQueryAttribute | None = None) -> str:
         return json.dumps(self, cls=OSCNodeEncoder, attribute_filter=attribute)
+
+    def validate_values(self, values: list[T]):
+        """Validate the given value types against the specified types of this node.
+        Raises TypeError if any of the values are invalid, of if the number of values does
+        not match the number of types of this node.
+        """
+        if len(values) != len(self.type):
+            raise TypeError(f"Expected {len(self.type)} value(s), got {len(values)}")
+
+        for i, type_ in enumerate(self.type):
+            if type(values[i]) is not type_:
+                raise TypeError(
+                    f"Expected {type_} for value {i}, got {type(values[i])}"
+                )
+
+    def are_values_valid(self, values: list[T]) -> bool:
+        """Convenience method for validate_values()."""
+        try:
+            self.validate_values(values)
+        except TypeError:
+            return False
+        return True
 
     def __iter__(self):
         yield self
@@ -222,30 +222,13 @@ class OSCPathNode:
             for subNode in self.contents:
                 yield from subNode
 
-    def __str__(self) -> str:
-        return f'<OSCQueryNode @ {self.full_path} (D: "{self.description}" T:{self.type} V:{self.value})>'
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__} @ {self.full_path} (D: "{self.description}" T:{self.type} V:{self.value})>'
 
-
-def osc_type_string_to_python_type(type_str: str) -> list[type]:
-    types: list[type] = []
-    for type_value in type_str:
-        match type_value:
-            case "":
-                pass
-            case "i":
-                types.append(int)
-            case "f" | "h" | "d" | "t":
-                types.append(float)
-            case "T" | "F":
-                types.append(bool)
-            case "s":
-                types.append(str)
-            case _:
-                raise Exception(
-                    f"Unknown OSC type when converting! {type_value} -> ???"
-                )
-
-    return types
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, OSCPathNode):
+            return NotImplemented
+        return self.full_path == other.full_path
 
 
 def python_type_list_to_osc_type(types_: list[type]) -> str:
@@ -260,20 +243,9 @@ def python_type_list_to_osc_type(types_: list[type]) -> str:
                 output.append("f")
             case builtins.str:
                 output.append("s")
-            case _:
-                raise Exception(f"Cannot convert {type_} to OSC type!")
+            case _:  # pragma: no cover
+                raise Exception(
+                    f"Cannot convert {type_} to OSC type!"
+                )  # pragma: no cover
 
     return "".join(output)
-
-
-if __name__ == "__main__":
-    root = OSCPathNode("/", description="root node")
-    root.add_child_node(OSCPathNode("/test/node/one"))
-    root.add_child_node(OSCPathNode("/test/node/two"))
-    root.add_child_node(OSCPathNode("/test/othernode/one"))
-    root.add_child_node(OSCPathNode("/test/othernode/three"))
-
-    # print(root)
-
-    for _child in root:
-        print(_child)
