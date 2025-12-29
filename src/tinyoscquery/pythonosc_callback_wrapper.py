@@ -4,7 +4,7 @@ from typing import Any
 import pythonosc
 from pythonosc.dispatcher import Dispatcher, Handler
 
-from tinyoscquery.shared.osc_addressspace import OSCAddressSpace
+from tinyoscquery.shared.osc_address_space import OSCAddressSpace
 from tinyoscquery.shared.osc_path_node import OSCPathNode
 
 logger = logging.getLogger(__name__)

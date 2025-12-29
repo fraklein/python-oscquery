@@ -1,6 +1,6 @@
 import pytest
 
-from tinyoscquery.shared.osc_addressspace import OSCAddressSpace
+from tinyoscquery.shared.osc_address_space import OSCAddressSpace
 from tinyoscquery.shared.osc_path_node import OSCPathNode
 
 

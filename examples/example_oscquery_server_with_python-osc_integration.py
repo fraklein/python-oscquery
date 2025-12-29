@@ -6,7 +6,7 @@ from pythonosc.osc_server import BlockingOSCUDPServer
 from tinyoscquery.osc_query_service import OSCQueryService
 from tinyoscquery.pythonosc_callback_wrapper import map_node
 from tinyoscquery.shared.osc_access import OSCAccess
-from tinyoscquery.shared.osc_addressspace import OSCAddressSpace
+from tinyoscquery.shared.osc_address_space import OSCAddressSpace
 from tinyoscquery.shared.osc_path_node import OSCPathNode
 
 
