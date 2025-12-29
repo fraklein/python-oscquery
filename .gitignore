@@ -250,5 +250,7 @@ fabric.properties
 /.idea/inspectionProfiles/Project_Default.xml
 /.idea/runConfigurations/pytest_in_gordon.xml
 /.idea/ruff.xml
-/.idea/tinyoscquery.iml
+/.idea/pythonoscquery.iml
 /.idea/vcs.xml
+/coverage.lcov
+/.idea/python-oscquery.iml

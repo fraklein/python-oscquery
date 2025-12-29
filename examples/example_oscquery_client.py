@@ -1,11 +1,11 @@
 import time
 
-from tinyoscquery.osc_query_browser import OSCQueryBrowser
-from tinyoscquery.osc_query_client import OSCQueryClient
-from tinyoscquery.osc_query_service import OSCQueryService
-from tinyoscquery.shared.osc_access import OSCAccess
-from tinyoscquery.shared.osc_address_space import OSCAddressSpace
-from tinyoscquery.shared.osc_path_node import OSCPathNode
+from pythonoscquery.osc_query_browser import OSCQueryBrowser
+from pythonoscquery.osc_query_client import OSCQueryClient
+from pythonoscquery.osc_query_service import OSCQueryService
+from pythonoscquery.shared.osc_access import OSCAccess
+from pythonoscquery.shared.osc_address_space import OSCAddressSpace
+from pythonoscquery.shared.osc_path_node import OSCPathNode
 
 if __name__ == "__main__":
     osc_address_space = OSCAddressSpace()

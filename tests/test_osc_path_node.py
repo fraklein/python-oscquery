@@ -1,11 +1,10 @@
 import builtins
 
 import pytest
-
-from tinyoscquery.shared.osc_access import OSCAccess
-from tinyoscquery.shared.osc_address_space import OSCAddressSpace
-from tinyoscquery.shared.osc_path_node import OSCPathNode
-from tinyoscquery.shared.oscquery_spec import OSCQueryAttribute
+from pythonoscquery.shared.osc_access import OSCAccess
+from pythonoscquery.shared.osc_address_space import OSCAddressSpace
+from pythonoscquery.shared.osc_path_node import OSCPathNode
+from pythonoscquery.shared.oscquery_spec import OSCQueryAttribute
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-from tinyoscquery.shared.osc_host_info import OSCHostInfo
+from pythonoscquery.shared.osc_host_info import OSCHostInfo
 
 
 class TestOscHostInfo:

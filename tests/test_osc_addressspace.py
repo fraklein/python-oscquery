@@ -1,7 +1,6 @@
 import pytest
-
-from tinyoscquery.shared.osc_address_space import OSCAddressSpace
-from tinyoscquery.shared.osc_path_node import OSCPathNode
+from pythonoscquery.shared.osc_address_space import OSCAddressSpace
+from pythonoscquery.shared.osc_path_node import OSCPathNode
 
 
 def path():

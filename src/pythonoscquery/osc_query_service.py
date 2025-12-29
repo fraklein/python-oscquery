@@ -5,13 +5,12 @@ import urllib
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from ipaddress import IPv4Address, IPv6Address
 
+from pythonoscquery.shared.osc_access import OSCAccess
+from pythonoscquery.shared.osc_address_space import OSCAddressSpace
+from pythonoscquery.shared.osc_host_info import OSCHostInfo
+from pythonoscquery.shared.osc_path_node import OSCPathNode
+from pythonoscquery.shared.oscquery_spec import OSCQueryAttribute
 from zeroconf import ServiceInfo, Zeroconf
-
-from tinyoscquery.shared.osc_access import OSCAccess
-from tinyoscquery.shared.osc_address_space import OSCAddressSpace
-from tinyoscquery.shared.osc_host_info import OSCHostInfo
-from tinyoscquery.shared.osc_path_node import OSCPathNode
-from tinyoscquery.shared.oscquery_spec import OSCQueryAttribute
 
 logger = logging.getLogger(__name__)
 

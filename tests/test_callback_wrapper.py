@@ -4,11 +4,10 @@ import logging
 import pytest
 from pythonosc import osc_message_builder
 from pythonosc.dispatcher import Dispatcher
-
-from tinyoscquery.pythonosc_callback_wrapper import OSCCallbackWrapper, map_node
-from tinyoscquery.shared.osc_access import OSCAccess
-from tinyoscquery.shared.osc_address_space import OSCAddressSpace
-from tinyoscquery.shared.osc_path_node import OSCPathNode
+from pythonoscquery.pythonosc_callback_wrapper import OSCCallbackWrapper, map_node
+from pythonoscquery.shared.osc_access import OSCAccess
+from pythonoscquery.shared.osc_address_space import OSCAddressSpace
+from pythonoscquery.shared.osc_path_node import OSCPathNode
 
 logging.basicConfig(level=logging.DEBUG)
 
