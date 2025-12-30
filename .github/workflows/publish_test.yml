@@ -29,5 +29,5 @@ jobs:
         run: uv run --isolated --no-project --with dist/*.whl examples/example_oscquery_client.py
       - name: Smoke test (source distribution)
         run: uv run --isolated --no-project --with dist/*.tar.gz examples/example_oscquery_client.py
-      #- name: Publish
-      #  run: uv publish
+      - name: Publish
+        run: uv publish
