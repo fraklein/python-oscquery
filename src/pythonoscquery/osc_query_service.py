@@ -62,7 +62,7 @@ class OSCQueryService:
         self._advertise_osc_query_service(zeroconf)
         self._advertise_osc_service(zeroconf)
         http_server = OSCQueryHTTPServer(
-            self._address_space.root_node,
+            self._address_space,
             self.host_info,
             ("", self.http_port),
             OSCQueryHTTPHandler,
@@ -123,14 +123,14 @@ class OSCQueryService:
 class OSCQueryHTTPServer(ThreadingHTTPServer):
     def __init__(
         self,
-        root_node,
-        host_info,
+        address_space: OSCAddressSpace,
+        host_info: OSCHostInfo,
         server_address: tuple[str, int],
         request_handler_class,
         bind_and_activate: bool = ...,
     ) -> None:
         super().__init__(server_address, request_handler_class, bind_and_activate)
-        self.root_node = root_node
+        self.address_space = address_space
         self.host_info = host_info
 
 
@@ -167,30 +167,33 @@ class OSCQueryHTTPHandler(SimpleHTTPRequestHandler):
             self._respond(200, str(self.server.host_info.to_json()))
             return
 
-        node: OSCPathNode = self.server.root_node.find_subnode(parsed_url.path)
-        if node is None:
-            self._respond(404, "OSC Path not found")
-            return
-
-        attribute = None
-        if query_params:
-            query = list(query_params)[0]
-            try:
-                attribute = OSCQueryAttribute(query.upper())
-            except ValueError:
-                self._respond(
-                    500,
-                    f"Internal server error - Query {query} not mappable to OSC attribute",
-                )
+        with self.server.address_space.lock:
+            node: OSCPathNode = self.server.address_space.find_node(parsed_url.path)
+            if node is None:
+                self._respond(404, "OSC Path not found")
                 return
 
-            if attribute is OSCQueryAttribute.VALUE and node.access in (
-                OSCAccess.NO_VALUE,
-                OSCAccess.WRITEONLY_VALUE,
-            ):
-                self._respond(
-                    204, f"Attribute {query} not valid - node is not accessible."
-                )
-                return
+            attribute = None
+            if query_params:
+                query = list(query_params)[0]
+                try:
+                    attribute = OSCQueryAttribute(query.upper())
+                except ValueError:
+                    self._respond(
+                        500,
+                        f"Internal server error - Query {query} not mappable to OSC attribute",
+                    )
+                    return
 
-        self._respond(200, str(node.to_json(attribute)))
+                if attribute is OSCQueryAttribute.VALUE and node.access in (
+                    OSCAccess.NO_VALUE,
+                    OSCAccess.WRITEONLY_VALUE,
+                ):
+                    self._respond(
+                        204, f"Attribute {query} not valid - node is not accessible."
+                    )
+                    return
+
+            json = str(node.to_json(attribute))
+
+            self._respond(200, json)

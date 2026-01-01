@@ -242,7 +242,6 @@ server.serve_forever()
 ## Project to-do
 
 - [ ] Make OSCQueryClient not depended on service_info, but manually configurable
-- [ ] Think about thread-safety of the HTTP-server
 - [ ] Add a mechanism to update OSC nodes with new values
 - [ ] Add the RANGE attribute and validate messages against it
 - [ ] Add websocket communication as per spec
