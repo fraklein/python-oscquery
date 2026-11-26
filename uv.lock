@@ -325,11 +325,11 @@ wheels = [
 
 [[package]]
 name = "python-osc"
-version = "1.10.2"
+version = "1.10.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a1/79/094503dc039c8ba9cead01f4b5e163d795a6a502563d3a31f35d20a1ecf8/python_osc-1.10.2.tar.gz", hash = "sha256:732548f4f467dda9f890a6b0b3bfb085ab117f4bd38a45a58d2ca0f3bd6a546d", size = 33716, upload-time = "2026-04-02T20:46:04.692Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/77/ec/48d2e2d052d5ed186512e6e0ab831fd7ea504f2c724914bbedcdfcdb1630/python_osc-1.10.3.tar.gz", hash = "sha256:ef3333952b6b496d0458511edbdb6966a5e3b2ed1d8b6f2373e6005ea76f08cd", size = 39923, upload-time = "2026-11-15T08:25:43.988Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1f/a2/ce26e437e36707f0da839dd88b072413825ea8986b73ce7b5c4f3cd1b7f4/python_osc-1.10.2-py3-none-any.whl", hash = "sha256:018b28e1cc06427c2c3d695f4e8d87d0caecfe604ff889acc45235cfd94183a2", size = 45467, upload-time = "2026-04-02T20:46:03.718Z" },
+    { url = "https://files.pythonhosted.org/packages/45/7e/640f2399ce249eb144fd160d8d36e3fc5debbfa5939f29f5d742e4111974/python_osc-1.10.3-py3-none-any.whl", hash = "sha256:1777a12c3a794f78f42ea072bb77fff7c774b29d6edf7ee95860582c958339df", size = 50605, upload-time = "2026-11-15T08:25:42.696Z" },
 ]
 
 [[package]]
